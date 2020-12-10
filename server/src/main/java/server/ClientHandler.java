@@ -59,7 +59,7 @@ public class ClientHandler {
                                         break;
 
                                     } else {
-                                        out.writeUTF("Учетная запись уже используется");
+                                        out.writeUTF("Учетная запись уже используется!");
                                     }
                                 } else {
                                     out.writeUTF("Неверный логин / пароль");
