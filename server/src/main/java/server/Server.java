@@ -49,6 +49,20 @@ public class Server {
             c.sendMsg(message);
         }
     }
+    public void infoBroadCastmassege(ClientHandler sender, String msg) {
+        String message = String.format("%s",  msg);
+
+        for (ClientHandler c : clients) {
+            if(c.equals(sender)){
+                message = String.format("Вы изменили имя с %s",  msg);
+                c.sendMsg(message);
+            }
+            else {
+                message = String.format(sender.getNickname() + " изменил(а) имя с %s",  msg);
+                c.sendMsg(message);
+            }
+        }
+    }
 
     public void privateMsg(ClientHandler sender, String receiver, String msg) {
         String message = String.format("[ %s ] private [ %s ] : %s", sender.getNickname(), receiver, msg);
