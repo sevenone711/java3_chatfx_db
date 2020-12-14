@@ -16,9 +16,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -48,11 +46,13 @@ public class Controller implements Initializable {
 
     private boolean authenticated;
     private String nickname;
+    private String login;
     private Stage stage;
     private Stage regStage;
     private RegController regController;
+    private File historyFile;
 
-    public void setAuthenticated(boolean authenticated) {
+    public void setAuthenticated(boolean authenticated) throws IOException {
         this.authenticated = authenticated;
         msgPanel.setManaged(authenticated);
         msgPanel.setVisible(authenticated);
@@ -65,7 +65,64 @@ public class Controller implements Initializable {
         }
         setTitle(nickname);
         textArea.clear();
+        //тут выводим историю чата
+        addTextAreaHistorichat();
+
+
+
     }
+
+    private void addTextAreaHistorichat () throws IOException {
+
+        int lineNumber = 0;
+        if (nickname != ""){
+            if (setMessageHistoryFile().exists()){
+
+                try (FileReader fr = new FileReader(setMessageHistoryFile())) {
+                    LineNumberReader lnr = new LineNumberReader(fr);
+                    while (lnr.readLine() != null) {
+                        lineNumber++;
+
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            try (BufferedReader bufferedReader = new BufferedReader(new FileReader(setMessageHistoryFile()))) {   //Такой способ дает автоматическое закрытие считывающего или записыувающего потока, тоесть не нобязательно применять close()
+
+                if(lineNumber <= 100){
+
+                    for (int i = 1; i <= lineNumber ; i++){
+                        String line = "";
+                        line = bufferedReader.readLine();
+
+                        textArea.appendText(line +  "\n");
+                    }
+                } else {
+                    int tempLineNumber = 0;
+                    tempLineNumber = lineNumber - 100;
+                    for (int i = 1; i <= lineNumber ; i++){
+                        if(i > tempLineNumber){
+                            String line = "";
+                            line = bufferedReader.readLine();
+
+                            textArea.appendText(line +  "\n");
+                        }
+                    }
+                }
+
+
+
+
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+            }else {
+                historyFile.createNewFile();
+            }
+        }
+    }
+
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -83,7 +140,11 @@ public class Controller implements Initializable {
                 }
             });
         });
-        setAuthenticated(false);
+        try {
+            setAuthenticated(false);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void connect() {
@@ -110,6 +171,7 @@ public class Controller implements Initializable {
                             if (str.startsWith("/authok ")) {
                                 nickname = str.split("\\s")[1];
                                 setAuthenticated(true);
+
                                 break;
                             }
 
@@ -119,6 +181,7 @@ public class Controller implements Initializable {
 
                         } else {
                             textArea.appendText(str + "\n");
+                            writeTextHistoriFile(str);
                         }
                     }
 
@@ -140,6 +203,7 @@ public class Controller implements Initializable {
                             }
                         } else {
                             textArea.appendText(str + "\n");
+                            writeTextHistoriFile(str);
                         }
                     }
                 } catch (RuntimeException e) {
@@ -147,7 +211,11 @@ public class Controller implements Initializable {
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
-                    setAuthenticated(false);
+                    try {
+                        setAuthenticated(false);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     try {
                         socket.close();
                     } catch (IOException e) {
@@ -156,6 +224,16 @@ public class Controller implements Initializable {
                 }
             }).start();
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void writeTextHistoriFile (String str) {
+        try (BufferedWriter bufferedWriter =
+                     new BufferedWriter(new FileWriter(setMessageHistoryFile(), true))) {
+
+            bufferedWriter.write(str + "\n");
+        }catch (IOException e){
             e.printStackTrace();
         }
     }
@@ -180,6 +258,7 @@ public class Controller implements Initializable {
         String msg = String.format("/auth %s %s", loginField.getText().trim(), passwordField.getText().trim());
         try {
             out.writeUTF(msg);
+            login = loginField.getText().trim();
             passwordField.clear();
         } catch (IOException e) {
             e.printStackTrace();
@@ -239,4 +318,9 @@ public class Controller implements Initializable {
             e.printStackTrace();
         }
     }
-}
+
+    private File setMessageHistoryFile() {
+        historyFile = new File("client/src/main/resources/hisotyfiles/history_" + login + ".txt");
+        return historyFile;
+    }
+    }

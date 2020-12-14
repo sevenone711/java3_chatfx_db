@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 
 public class ClientHandler {
     private Server server;
@@ -46,7 +47,7 @@ public class ClientHandler {
                                 String[] token = str.split("\\s", 3);
                                 String newNick = server.getAuthService()
                                         .getNicknameByLoginAndPassword(token[1], token[2]);
-//                                String newNick = DataBase.getNameAuthUser(token[1],token[2]);
+
 
                                 if (newNick != null) {
                                     login = token[1];
@@ -80,7 +81,21 @@ public class ClientHandler {
                                 }
                                 server.privateMsg(this, token[1], token[2]);
                             }
+                            //Задать новое имя
+                            else if (str.startsWith("/rename")) {
+                                String[] token = str.split("\\s+", 2);
+                                if (token.length < 2) {
+                                    continue;
+                                }
+                                System.out.println(token[1]);
+//                                server.privateMsg(this, token[1], token[2]);
+                                DataBase.updateUserName(idUser,token[1]);
+                                server.infoBroadCastmassege(this,   nickname + " на " + token[1]);
+                                nickname = token[1];
+                                server.unsubscribe(this);
+                                server.subscribe(this);
 
+                            }
                             if (str.equals("/end")) {
                                 out.writeUTF("/end");
                                 break;
